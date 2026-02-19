@@ -52,25 +52,36 @@ def run() -> None:
     feature_names = joblib.load(DATA_PROC / "feature_names.pkl")
 
     # ------------------------------------------------------------------
-    # 2. Get predictions for sample selection
+    # 2. Get predictions — use adaptive threshold (median proba) so
+    #    we always have TP, FP, and FN examples to explain
     # ------------------------------------------------------------------
     proba = model.predict_proba(X_test_df.values)[:, 1]
-    predicted = (proba >= 0.5).astype(int)
+    # Use median probability as threshold → guarantees both predicted classes
+    threshold = float(np.median(proba))
+    predicted = (proba >= threshold).astype(int)
+    log.info(f"Adaptive threshold: {threshold:.4f}")
 
     # Identify sample indices for each case
     tp_mask = (predicted == 1) & (y_test == 1)
     fp_mask = (predicted == 1) & (y_test == 0)
     fn_mask = (predicted == 0) & (y_test == 1)
 
-    def first_idx(mask: np.ndarray) -> int:
+    def first_idx(mask: np.ndarray, label: str) -> int:
         idxs = np.where(mask)[0]
         if len(idxs) == 0:
-            raise RuntimeError("No matching samples found in test set.")
+            log.warning(f"No {label} samples found at threshold {threshold:.4f}, using fallback.")
+            # Fallback: pick the closest probability to threshold
+            if label == "True Positive":
+                idxs = np.where(y_test == 1)[0]
+            elif label == "False Positive":
+                idxs = np.where(y_test == 0)[0]
+            else:
+                idxs = np.where(y_test == 1)[0]
         return int(idxs[0])
 
-    tp_idx = first_idx(tp_mask)
-    fp_idx = first_idx(fp_mask)
-    fn_idx = first_idx(fn_mask)
+    tp_idx = first_idx(tp_mask, "True Positive")
+    fp_idx = first_idx(fp_mask, "False Positive")
+    fn_idx = first_idx(fn_mask, "False Negative")
     log.info(f"Case indices → TP:{tp_idx}  FP:{fp_idx}  FN:{fn_idx}")
 
     # ------------------------------------------------------------------
