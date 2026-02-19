@@ -44,9 +44,8 @@ nb1 = nb([
 
         import pandas as pd
         import matplotlib.pyplot as plt
-        import matplotlib
-        matplotlib.use('Agg')
         import seaborn as sns
+        %matplotlib inline
 
         from src.eda.eda import (
             load_fraud_data, load_ip_country,
