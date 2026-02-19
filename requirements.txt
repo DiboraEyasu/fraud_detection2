@@ -1,0 +1,32 @@
+# Base Dependencies
+numpy
+pandas
+scikit-learn
+imbalanced-learn
+mlflow
+dvc
+dvc-s3
+fastapi
+uvicorn
+pydantic
+python-dotenv
+pyyaml
+joblib
+xgboost
+lightgbm
+shap
+matplotlib
+seaborn
+
+# Development Dependencies
+pytest
+pytest-cov
+black
+isort
+flake8
+pre-commit
+mypy
+codecov
+
+# Optional Fast Processing
+rapidfuzz
