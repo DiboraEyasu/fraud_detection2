@@ -89,12 +89,17 @@ def plot_shap_force(
     label : str
         Descriptive label (e.g. 'True Positive', 'False Positive').
     """
-    shap.initjs()
-    force = shap.force_plot(
-        explainer.expected_value if not isinstance(explainer.expected_value, list)
-        else explainer.expected_value[1],
+    expected_val = (
+        explainer.expected_value
+        if not isinstance(explainer.expected_value, list)
+        else explainer.expected_value[1]
+    )
+    _row = X.iloc[idx] if hasattr(X, "iloc") else X[idx]
+
+    shap.force_plot(
+        expected_val,
         shap_values[idx],
-        X.iloc[idx] if hasattr(X, "iloc") else X[idx],
+        _row,
         matplotlib=True,
         show=False,
     )
