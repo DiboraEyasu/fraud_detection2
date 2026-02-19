@@ -103,22 +103,30 @@ def cross_validate_model(
       - ap_mean / ap_std  (Average Precision / AUC-PR)
       - f1_mean / f1_std
     """
+    from sklearn.base import clone
+
     skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
+    ap_scores: list[float] = []
+    f1_scores: list[float] = []
 
-    scoring = {
-        "ap": make_scorer(average_precision_score, needs_proba=True),
-        "f1": make_scorer(f1_score, zero_division=0),
-    }
+    for train_idx, val_idx in skf.split(X, y):
+        X_tr, X_val = X[train_idx], X[val_idx]
+        y_tr, y_val = y[train_idx], y[val_idx]
 
-    cv_results = cross_validate(
-        model, X, y, cv=skf, scoring=scoring, n_jobs=-1
-    )
+        m = clone(model)
+        m.fit(X_tr, y_tr)
+
+        proba = m.predict_proba(X_val)[:, 1]
+        preds = (proba >= 0.5).astype(int)
+
+        ap_scores.append(average_precision_score(y_val, proba))
+        f1_scores.append(f1_score(y_val, preds, zero_division=0))
 
     results = {
-        "ap_mean": float(np.mean(cv_results["test_ap"])),
-        "ap_std": float(np.std(cv_results["test_ap"])),
-        "f1_mean": float(np.mean(cv_results["test_f1"])),
-        "f1_std": float(np.std(cv_results["test_f1"])),
+        "ap_mean": float(np.mean(ap_scores)),
+        "ap_std": float(np.std(ap_scores)),
+        "f1_mean": float(np.mean(f1_scores)),
+        "f1_std": float(np.std(f1_scores)),
     }
     logger.info(
         f"Cross-validation ({n_splits}-fold): "
